@@ -115,6 +115,40 @@ def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly, r
 
     if args.show_time : print("\ninfer/postproc time : {:.3f}/{:.3f}".format(t0, t1))
 
+    norm_score_text = (score_text * 255 / np.max(score_text)).astype(np.uint8)
+    norm_score_link = (score_link * 255 / np.max(score_link)).astype(np.uint8)
+
+    # Convert score maps to color heatmaps
+    heatmap_text = cv2.applyColorMap(norm_score_text, cv2.COLORMAP_JET)
+    heatmap_link = cv2.applyColorMap(norm_score_link, cv2.COLORMAP_JET)
+
+    # Resize heatmaps to match original image size
+    heatmap_text = cv2.resize(heatmap_text, (image.shape[1], image.shape[0]))
+    heatmap_link = cv2.resize(heatmap_link, (image.shape[1], image.shape[0]))
+
+    # Blend heatmaps with original image
+    overlay_text = cv2.addWeighted(image, 0.7, heatmap_text, 0.5, 0)
+    overlay_link = cv2.addWeighted(image, 0.7, heatmap_link, 0.5, 0)
+
+    # Save or display the results
+    cv2.imwrite(f'./result/res_{os.path.basename(image_path)}_text_heatmap.jpg', overlay_text)
+    cv2.imwrite(f'./result/res_{os.path.basename(image_path)}_link_heatmap.jpg', overlay_link)
+
+
+    # Step 1: Ensure mask size matches the original image
+    text_mask = cv2.resize(norm_score_text, (image.shape[1], image.shape[0]))
+
+    # Step 2: Create a binary mask (white for detected text regions)
+    _, binary_mask = cv2.threshold(text_mask, 50, 255, cv2.THRESH_BINARY)
+
+    # Step 3: Fill detected regions with white
+    image_white = image.copy()
+    image_white[binary_mask == 255] = [255, 255, 255]  # Fill detected text regions with white
+
+    # Step 4: Save the result
+    cv2.imwrite(f'./result/res_{os.path.basename(image_path)}_text_removed.jpg', image_white)
+
+    
     return boxes, polys, ret_score_text
 
 
