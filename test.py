@@ -148,6 +148,16 @@ def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly, r
     # Step 4: Save the result
     cv2.imwrite(f'./result/res_{os.path.basename(image_path)}_text_removed.jpg', image_white)
 
+    # Step 5: Save Bounding Boxes to a Text File
+    output_file = f'./result/res_{os.path.basename(image_path)}_bboxes.txt'
+    with open(output_file, 'w') as f:
+        for box in boxes:
+            # Convert coordinates to integers for clarity
+            box = np.array(box).astype(int)
+            # Format: x1, y1, x2, y2, x3, y3, x4, y4
+            box_str = ','.join(map(str, box.flatten().tolist()))
+            f.write(f"{box_str}\n")
+
     
     return boxes, polys, ret_score_text
 
